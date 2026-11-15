@@ -75,8 +75,9 @@ function isLimited(key, max, duration) {
   entry.count+=1;return entry.count>max;
 }
 function remoteAddress(req) {
-  const cloudflare=req.headers['cf-connecting-ip'];
-  return typeof cloudflare==='string'&&cloudflare.length<64?cloudflare:req.socket.remoteAddress||'unknown';
+  const cloudflare=req.headers['cf-connecting-ip'],socketAddress=req.socket.remoteAddress||'unknown';
+  const viaLocalProxy=socketAddress==='127.0.0.1'||socketAddress==='::1'||socketAddress==='::ffff:127.0.0.1';
+  return viaLocalProxy&&typeof cloudflare==='string'&&cloudflare.length>0&&cloudflare.length<64?cloudflare:socketAddress;
 }
 function stampCooldownRemaining(lastStampAt) {
   const last = Number(lastStampAt || 0);
@@ -269,6 +270,20 @@ function cssRgb(hex) {
   const value=/^#[0-9a-f]{6}$/i.test(hex||'')?hex:'#101722';
   return `rgb(${parseInt(value.slice(1,3),16)}, ${parseInt(value.slice(3,5),16)}, ${parseInt(value.slice(5,7),16)})`;
 }
+function trimPng(source,threshold=12) {
+  // Crop fully transparent margins so a small icon on a large canvas fills its slot.
+  const input=PNG.sync.read(source);
+  let left=input.width,top=input.height,right=-1,bottom=-1;
+  for(let y=0;y<input.height;y++)for(let x=0;x<input.width;x++){
+    if(input.data[(y*input.width+x)*4+3]>threshold){if(x<left)left=x;if(x>right)right=x;if(y<top)top=y;if(y>bottom)bottom=y;}
+  }
+  if(right<left||bottom<top)return source;
+  const width=right-left+1,height=bottom-top+1;
+  if(width===input.width&&height===input.height)return source;
+  const output=new PNG({width,height});
+  for(let y=0;y<height;y++){const from=((y+top)*input.width+left)*4;input.data.copy(output.data,y*width*4,from,from+width*4);}
+  return PNG.sync.write(output,{deflateLevel:9,filterType:4});
+}
 function resizePng(source,width,height) {
   const input=PNG.sync.read(source);
   const output=new PNG({width,height});
@@ -357,11 +372,11 @@ function walletArtworkWithLiveStamps(source,card,logoSource) {
   let stampImage=null;
   try{
     const data=card.editor_config?.stampArtworkDataUrl;
-    if(typeof data==='string'&&data.startsWith('data:image/png;base64,'))stampImage=PNG.sync.read(resizePng(decodePngDataUrl(data,'stamp artwork'),60,60));
+    if(typeof data==='string'&&data.startsWith('data:image/png;base64,'))stampImage=PNG.sync.read(resizePng(trimPng(decodePngDataUrl(data,'stamp artwork')),84,84));
   }catch{stampImage=null;}
-  const diameter=76,gap=32,startX=(716-(5*diameter+4*gap))/2,radius=diameter/2;
+  const diameter=100,gap=22,startX=(716-(5*diameter+4*gap))/2,radius=diameter/2;
   for(let index=0;index<10;index++){
-    const row=Math.floor(index/5),column=index%5,cx=Math.round(startX+column*(diameter+gap)+radius),cy=Math.round((60+row*9)*896/100),isEarned=index<earned;
+    const row=Math.floor(index/5),column=index%5,cx=Math.round(startX+column*(diameter+gap)+radius),cy=Math.round((57.5+row*12.7)*896/100),isEarned=index<earned;
     for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
       const distance=Math.hypot(dx,dy);if(distance>radius)continue;
       if(distance>=radius-3)setPixel(cx+dx,cy+dy,accent,.98);
@@ -852,6 +867,7 @@ async function api(req, res, url) {
 
   if (req.method === 'POST' && route === '/api/register') {
     if(isLimited(`register:${remoteAddress(req)}`,5,60*60_000))return send(res,429,{error:'Too many agency sign-ups from this connection. Try again later.'});
+    if(process.env.ALLOW_AGENCY_SIGNUP!=='true'){const [agencyCount]=await pool.query('SELECT COUNT(*) AS count FROM agencies');if(Number(agencyCount[0].count)>0)return send(res,403,{error:'Agency sign-up is closed. Ask your Rinero administrator for an invitation.'});}
     const body = await readJson(req); const agencyName = text(body.agencyName); const userEmail = email(body.email); const password = typeof body.password === 'string' ? body.password : '';
     if (!agencyName || !userEmail || password.length < 12 || password.length > 200) return send(res,400,{ error:'Enter your agency name and email. Passwords must be at least 12 characters.' });
     const connection = await pool.getConnection();
@@ -871,6 +887,7 @@ async function api(req, res, url) {
   if (req.method === 'POST' && route === '/api/login') {
     if(isLimited(`login:${remoteAddress(req)}`,12,15*60_000))return send(res,429,{error:'Too many sign-in attempts. Wait 15 minutes and try again.'});
     const body=await readJson(req); const userEmail=email(body.email); const password=typeof body.password==='string'?body.password:'';
+    if(userEmail&&isLimited(`login-email:${userEmail}`,10,15*60_000))return send(res,429,{error:'Too many sign-in attempts. Wait 15 minutes and try again.'});
     const [users]=await pool.execute('SELECT id,email,password_hash FROM users WHERE email=? AND active=1 LIMIT 1',[userEmail||'']);
     const user=users[0]; if (!user || !(await passwordMatches(password,user.password_hash))) return send(res,401,{ error:'Email or password is incorrect.' });
     const [[agencyRows],[businessRows]]=await Promise.all([
@@ -1018,12 +1035,14 @@ async function api(req, res, url) {
   }
 
   if(req.method==='POST'&&route==='/api/invites/lookup'){
+    if(isLimited(`invite-lookup:${remoteAddress(req)}`,30,15*60_000))return send(res,429,{error:'Too many attempts. Wait 15 minutes and try again.'});
     const body=await readJson(req),token=text(body.token,100);if(!/^[A-Za-z0-9_-]{40,50}$/.test(token))return send(res,400,{error:'This invitation is invalid or expired.'});
     const [rows]=await pool.execute('SELECT i.email,i.access_role AS role,b.name AS business_name,a.name AS agency_name FROM client_invites i JOIN businesses b ON b.id=i.business_id JOIN agencies a ON a.id=i.agency_id WHERE i.token_hash=? AND i.expires_at>CURRENT_TIMESTAMP AND i.used_at IS NULL LIMIT 1',[hash(token)]);
     return rows.length?send(res,200,{invite:rows[0]}):send(res,404,{error:'This invitation is invalid or expired.'});
   }
   if(req.method==='POST'&&route==='/api/invites/accept'){
-    const body=await readJson(req);const token=text(body.token,100);const password=typeof body.password==='string'?body.password:'';if(!/^[A-Za-z0-9_-]{40,50}$/.test(token)||password.length<12||password.length>200)return send(res,400,{error:'This invitation is invalid or expired, or the password is too short.'});
+    if(isLimited(`invite-accept:${remoteAddress(req)}`,10,15*60_000))return send(res,429,{error:'Too many attempts. Wait 15 minutes and try again.'});
+    const body=await readJson(req);const token=text(body.token,100);if(/^[A-Za-z0-9_-]{40,50}$/.test(token)&&isLimited(`invite-token:${hash(token).toString('hex')}`,10,15*60_000))return send(res,429,{error:'Too many attempts for this invitation. Wait 15 minutes and try again.'});const password=typeof body.password==='string'?body.password:'';if(!/^[A-Za-z0-9_-]{40,50}$/.test(token)||password.length<12||password.length>200)return send(res,400,{error:'This invitation is invalid or expired, or the password is too short.'});
     const connection=await pool.getConnection();
     try {
       await connection.beginTransaction();
@@ -1059,6 +1078,7 @@ async function api(req, res, url) {
   }
 
   if(req.method==='POST'&&route==='/api/reset-password'){
+    if(isLimited(`reset-password:${remoteAddress(req)}`,10,15*60_000))return send(res,429,{error:'Too many attempts. Wait 15 minutes and try again.'});
     const body=await readJson(req);const token=text(body.token,100);const password=typeof body.password==='string'?body.password:'';if(!/^[A-Za-z0-9_-]{40,50}$/.test(token)||password.length<12||password.length>200)return send(res,400,{error:'This reset link is invalid or expired, or the password is too short.'});
     const connection=await pool.getConnection();try{await connection.beginTransaction();const [resets]=await connection.execute('SELECT user_id FROM password_resets WHERE token_hash=? AND expires_at>CURRENT_TIMESTAMP AND used_at IS NULL LIMIT 1 FOR UPDATE',[hash(token)]);if(!resets.length){await connection.rollback();return send(res,400,{error:'This reset link is invalid or expired.'});}await connection.execute('UPDATE users SET password_hash=? WHERE id=?',[await passwordHash(password),resets[0].user_id]);await connection.execute('UPDATE password_resets SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND used_at IS NULL',[resets[0].user_id]);await connection.execute('DELETE FROM web_sessions WHERE user_id=?',[resets[0].user_id]);await connection.commit();clearCookie(res);return send(res,200,{ok:true});}catch(error){await connection.rollback();throw error;}finally{connection.release();}
   }
@@ -1240,4 +1260,5 @@ const server=http.createServer(async(req,res)=>{
   fs.stat(filePath,(error,stat)=>{if(error||!stat.isFile()){res.writeHead(404);return res.end('Not Found');}const headers={'Content-Type':mimeTypes[path.extname(filePath)]||'application/octet-stream','Content-Length':stat.size,'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin'};if(requested==='index.html'||requested==='site/index.html')headers['Content-Security-Policy-Report-Only']="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri /api/csp-report";res.writeHead(200,headers);if(req.method==='HEAD')return res.end();fs.createReadStream(filePath).pipe(res);});
 });
 
-server.listen(port,'0.0.0.0',()=>console.log(`Rinero Stamps platform listening on port ${port}`));
+const host=process.env.HOST||'127.0.0.1';
+server.listen(port,host,()=>console.log(`Rinero Stamps platform listening on ${host}:${port}`));
