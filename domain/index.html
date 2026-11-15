@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101722" />
+  <title>Rinero Stamps — Loyalty, made easy</title>
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=87" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=87" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css?v=87" />
+</head>
+<body>
+  <main id="authGate" class="auth-gate hidden">
+    <div class="language-switch language-switch-public" role="group" aria-label="Language"><button type="button" class="language-option" data-language="en" aria-pressed="false">EN</button><button type="button" class="language-option" data-language="el" aria-pressed="false">ΕΛ</button><button type="button" class="language-option" data-language="es" aria-pressed="false">ES</button></div>
+    <section class="auth-card">
+      <img class="auth-logo" src="/rinero-logo.png" alt="Rinero" />
+      <p class="eyebrow">LOYALTY, MADE EASY</p>
+      <h1 id="authHeading">Welcome back</h1>
+      <p id="authIntro" class="subheading">Sign in to manage your business loyalty cards.</p>
+      <div id="authError" class="form-error hidden" role="alert"></div>
+      <form id="loginForm" class="auth-form">
+        <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254" /></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
+        <button class="primary-button wide-button" type="submit">Sign in</button>
+        <button class="link-button" id="forgotPassword" type="button">Forgot your password?</button>
+        <button class="link-button" id="showRegister" type="button">Create your business account</button>
+      </form>
+      <form id="registerForm" class="auth-form hidden">
+        <label>Your email<input name="email" type="email" autocomplete="email" required maxlength="254" /></label>
+        <label>Password <small>At least 12 characters</small><input name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
+        <label>Agency name<input name="agencyName" required maxlength="160" placeholder="e.g. Rinero Stamps" /></label>
+        <p class="privacy-note">Your agency gets one dashboard for all client businesses. Each client has its own locations, rewards, and staff access.</p>
+        <button class="primary-button wide-button" type="submit">Create agency account</button>
+        <button class="link-button" id="showLogin" type="button">Already have an account? Sign in</button>
+      </form>
+      <div id="authExtra" class="auth-form hidden"></div>
+    </section>
+  </main>
+
+  <main id="customerJoin" class="customer-shell hidden">
+    <div class="language-switch language-switch-public" role="group" aria-label="Language"><button type="button" class="language-option" data-language="en" aria-pressed="false">EN</button><button type="button" class="language-option" data-language="el" aria-pressed="false">ΕΛ</button><button type="button" class="language-option" data-language="es" aria-pressed="false">ES</button></div>
+    <section class="customer-card"><img class="auth-logo" src="/rinero-logo.png" alt="Rinero" /><p class="eyebrow">YOUR LOYALTY CARD</p><h1 id="joinTitle">Collect rewards</h1><p id="joinDescription" class="subheading"></p><div id="joinError" class="form-error hidden" role="alert"></div><div id="joinIdentityFields" class="hidden"><label class="form-label" for="joinContactType">Contact detail</label><select class="form-select" id="joinContactType"><option value="phone">Phone number</option><option value="email">Email address</option></select><input class="form-input" id="joinContact" autocomplete="email" placeholder="Phone number or email" /><p class="privacy-note">Used only to associate your card with this shop. No messages are sent. You can delete your card and its details from the card page.</p></div><button id="getCardButton" class="primary-button wide-button">Get my free card</button><p class="privacy-note" id="joinPrivacyNote">No account, name, email, or phone number needed.</p><p class="privacy-note hidden" id="identifiedJoinHint">Already have a card? Open it in Wallet and show its QR to shop staff.</p></section>
+  </main>
+
+  <main id="customerCard" class="customer-shell hidden">
+    <div class="language-switch language-switch-public" role="group" aria-label="Language"><button type="button" class="language-option" data-language="en" aria-pressed="false">EN</button><button type="button" class="language-option" data-language="el" aria-pressed="false">ΕΛ</button><button type="button" class="language-option" data-language="es" aria-pressed="false">ES</button></div>
+    <section class="customer-card customer-wallet-shell">
+      <div class="customer-wallet-frame ce-wallet" id="customerWalletFrame">
+        <div class="ce-light"></div>
+        <img class="customer-shop-logo hidden" id="customerShopLogo" alt="Shop logo" />
+        <div class="ce-kicker" id="customerCardKicker">LOYALTY CLUB</div>
+        <h1 class="ce-business-name" id="cardTitle">Your card</h1>
+        <div class="ce-location" id="cardSubtitle"></div>
+        <div class="ce-stamp-area"><div class="ce-stamp-heading"><span id="customerStampsLabel">YOUR STAMPS</span><b id="customerStampCount"></b></div><div class="ce-stamp-grid" id="stampGrid"></div></div>
+        <div class="ce-reward"><span id="customerRewardLabel">NEXT REWARD</span><strong id="rewardDescription"></strong></div>
+      </div>
+      <p class="customer-wallet-caption">Wallet card preview</p>
+      <div id="customerCardError" class="form-error hidden" role="alert"></div>
+      <p id="cardProgress" class="card-progress"></p>
+      <div class="form-message success-message hidden" id="redeemSuccess" role="status"></div>
+      <button class="secondary-button wide-button wallet-add-button hidden" id="addAppleWallet">Add to Apple Wallet</button><button class="secondary-button wide-button wallet-add-button hidden" id="addGoogleWallet">Add to Google Wallet</button><button class="link-button" id="deleteCustomerCard">Delete my card</button>
+      <p class="privacy-note" id="cardPrivacyNote">No name, phone, or email is collected. A random ID is saved in this browser, alongside a secure cookie, to keep this anonymous card available on this device. Scan your Wallet card QR to reopen it on another device.</p>
+    </section>
+  </main>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <a class="sidebar-brand" href="/" aria-label="Rinero Stamps home"><img src="/rinero-logo.png" alt="Rinero" /></a>
+      <div class="language-switch" role="group" aria-label="Language"><button type="button" class="language-option" data-language="en" aria-pressed="false">EN</button><button type="button" class="language-option" data-language="el" aria-pressed="false">ΕΛ</button><button type="button" class="language-option" data-language="es" aria-pressed="false">ES</button></div>
+      <div class="workspace-label">YOUR WORKSPACE</div>
+      <div class="workspace-switch"><span class="workspace-icon">R</span><span class="workspace-copy"><b id="businessName" class="user-content">Business</b><small id="businessType">Workspace</small></span></div>
+      <nav class="nav-group"><div class="workspace-label">OVERVIEW</div><button class="nav-link active" data-section="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></button><button class="nav-link hidden" id="staffNav" data-section="staff"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16M6.5 16V8.5a2 2 0 0 1 2-2h7l3 3V16"/><path d="M15.5 6.5v3h3M12 12v5m-2.5-2.5h5"/></svg><span>Add stamps</span></button></nav>
+      <div class="sidebar-bottom"><button class="nav-link" id="logoutButton"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H5.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10M14 8l4 4-4 4m4-4H9"/></svg><span>Sign out</span></button><div class="profile-row"><div class="avatar">✓</div><div><b id="userEmail"></b><small>Business account</small></div></div></div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar"><div class="breadcrumb">Rinero Stamps <span>/</span> <b id="breadcrumb">Agency</b></div><a class="topbar-brand" href="/" aria-label="Rinero Stamps home"><img src="/rinero-logo.png" alt="Rinero" /></a><div class="top-actions"><button class="secondary-button hidden" id="returnAgencyButton"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7M8 12h12"/></svg><span>All clients</span></button><button class="primary-button hidden" id="addLocationButton"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add a location</span></button><button class="primary-button hidden" id="addClientButton"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add a client</span></button></div></header>
+      <section class="page" id="dashboardSection">
+        <div class="page-heading"><div><div class="eyebrow">YOUR AGENCY</div><h1>Welcome, <span id="welcomeName" class="user-content">there</span></h1><p class="subheading">Manage client businesses, their locations, and loyalty offers.</p></div></div>
+        <div id="dashboardError" class="form-error hidden" role="alert"></div>
+        <div class="metrics-grid">
+          <article class="metric-card"><div class="metric-top">Client businesses</div><div class="metric-number" id="clientCount">0</div><div class="metric-foot">In your agency</div></article>
+          <article class="metric-card"><div class="metric-top">Stamps collected</div><div class="metric-number" id="stampCount">0</div><div class="metric-foot">Recorded by your staff</div></article>
+          <article class="metric-card"><div class="metric-top">Rewards redeemed</div><div class="metric-number" id="rewardCount">0</div><div class="metric-foot">From your real customers</div></article>
+          <article class="metric-card"><div class="metric-top">Client owner accounts</div><div class="metric-number" id="businessAccountCount">0</div><div class="metric-foot">Separate client logins created</div></article>
+        </div>
+        <section class="panel real-activity-panel"><div class="panel-heading"><div><h2>Weekly activity</h2><p>Stamps and rewards by day.</p></div><div class="activity-heading-tools"><div class="activity-week-nav"><button class="secondary-button activity-week-button" id="activityPreviousWeek" type="button" aria-label="Previous week" title="Previous week">‹</button><span id="activityWeekLabel" class="activity-week-label"></span><button class="secondary-button activity-week-button" id="activityNextWeek" type="button" aria-label="Next week" title="Next week">›</button></div><div class="chart-legend"><span><i class="legend-stamp"></i> Stamps</span><span><i class="legend-reward"></i> Rewards</span></div></div></div><div class="real-chart" id="activityChart" aria-label="Weekly activity calendar"></div><p class="form-error hidden" id="activityError" role="alert"></p></section>
+        <section class="panel locations-panel" id="agencyClientsPanel"><div class="panel-heading"><div><h2>Your client businesses</h2><p>Cafés, barbers, salons, and any other local business.</p></div></div><div class="billing-notice"><b>Billing is off</b><span>Pro pilot analytics can be enabled per shop. Checkout and charges are not enabled.</span></div><div class="client-list" id="clientList"></div><div id="emptyClients" class="empty-state hidden"><h2>No clients added yet</h2><p>Add a business and its first location and reward.</p><button class="primary-button" id="emptyAddClient">Add a client</button></div></section>
+        <section class="panel locations-panel hidden" id="businessLocationsPanel"><div class="panel-heading"><div><h2 id="selectedClientName">Business locations</h2><p>Manage this client's locations and customer links.</p></div><div class="panel-actions"><button class="secondary-button" id="editBusinessProfileButton">Edit shop profile</button></div></div><div class="location-list" id="locationList"></div><div id="emptyLocations" class="empty-state hidden"><h2>No locations yet</h2><p>Add a location to set up its loyalty reward.</p></div><section class="pro-analytics hidden" id="proAnalyticsPanel"><div class="pro-analytics-heading"><div><p class="eyebrow">PRO INSIGHTS · LAST 30 DAYS</p><h2>How customers return</h2></div><span class="plan-pill promo">Pro</span></div><div class="pro-metrics"><article><small>Cards issued</small><b id="proCards">0</b></article><article><small>Active cards</small><b id="proActiveCards">0</b></article><article><small>Repeat cards</small><b id="proRepeatCards">0</b></article><article><small>Repeat rate</small><b id="proRepeatRate">0%</b></article><article><small>New cards</small><b id="proNewCards">0</b></article><article><small>Stamps added</small><b id="proStamps">0</b></article><article><small>Rewards claimed</small><b id="proRewards">0</b></article><article><small>Rewards per stamp</small><b id="proRedemptionRate">0%</b></article></div><div class="pro-chart" id="proAnalyticsChart" aria-label="Daily stamps and rewards during the past 30 days"></div><p class="pro-footnote">Counts are based on anonymous loyalty cards and recorded stamp activity. No customer names or contact details are collected for this report.</p><div id="proAnalyticsError" class="form-error hidden"></div></section></section>
+        <section class="panel team-panel hidden" id="teamPanel"><div class="panel-heading"><div><h2>Business access</h2><p>Owners and staff have separate accounts and stamp history.</p></div><button class="secondary-button" id="addStaffButton"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Invite staff</span></button></div><div id="teamList" class="team-list"></div></section>
+      </section>
+      <section class="page hidden" id="staffSection">
+        <div class="staff-shop-identity hidden" id="staffShopIdentity"><img id="staffShopLogo" alt="" /><div><span>Staff workspace</span><strong id="staffShopName"></strong></div></div>
+        <div class="page-heading"><div><div class="eyebrow">AT THE COUNTER</div><h1>Help a customer</h1><p class="subheading">Scan their loyalty card, then tap one button.</p></div></div>
+        <section class="panel staff-panel"><button class="primary-button wide-button scan-button" id="scanCardButton">Scan customer card</button><div id="cameraReader" class="camera-reader hidden"></div><p class="scan-help" id="scanHelp">Point the camera at the QR code on the customer's card.</p><details class="manual-card-entry"><summary>Camera not working? Enter card link</summary><label class="form-label" for="customerToken">Paste the customer's card link</label><input class="form-input" id="customerToken" autocomplete="off" placeholder="Customer opens their card and taps ‘Show cashier’" /></details><div class="staff-actions"><button class="primary-button" id="stampButton" disabled>Add one stamp</button><button class="secondary-button" id="redeemButton" disabled>Redeem reward</button></div><div id="staffMessage" class="form-message" role="status"></div></section>
+      </section>
+      <footer class="footer"><span>Rinero Stamps</span></footer>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"><section class="modal"><button id="modalClose" class="modal-close" aria-label="Close">×</button><div id="modalContent"></div></section></div>
+  <div id="toast" class="toast" role="status"><span>✓</span><div><b id="toastTitle"></b><small id="toastCopy"></small></div></div>
+  <script src="/vendor/html5-qrcode.min.js" defer></script>
+  <script src="/app.js?v=87" defer></script>
+</body>
+</html>
