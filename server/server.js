@@ -372,11 +372,11 @@ function walletArtworkWithLiveStamps(source,card,logoSource) {
   let stampImage=null;
   try{
     const data=card.editor_config?.stampArtworkDataUrl;
-    if(typeof data==='string'&&data.startsWith('data:image/png;base64,'))stampImage=PNG.sync.read(resizePng(trimPng(decodePngDataUrl(data,'stamp artwork')),60,60));
+    if(typeof data==='string'&&data.startsWith('data:image/png;base64,'))stampImage=PNG.sync.read(resizePng(trimPng(decodePngDataUrl(data,'stamp artwork')),84,84));
   }catch{stampImage=null;}
-  const diameter=76,gap=32,startX=(716-(5*diameter+4*gap))/2,radius=diameter/2;
+  const diameter=100,gap=22,startX=(716-(5*diameter+4*gap))/2,radius=diameter/2;
   for(let index=0;index<10;index++){
-    const row=Math.floor(index/5),column=index%5,cx=Math.round(startX+column*(diameter+gap)+radius),cy=Math.round((60+row*9)*896/100),isEarned=index<earned;
+    const row=Math.floor(index/5),column=index%5,cx=Math.round(startX+column*(diameter+gap)+radius),cy=Math.round((57.5+row*12.7)*896/100),isEarned=index<earned;
     for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
       const distance=Math.hypot(dx,dy);if(distance>radius)continue;
       if(distance>=radius-3)setPixel(cx+dx,cy+dy,accent,.98);
